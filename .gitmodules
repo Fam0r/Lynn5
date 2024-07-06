@@ -1,0 +1,3 @@
+[submodule "voagel/extensions/private"]
+	path = voagel/extensions/private
+	url = git@github.com:Vocaned/voagel-private.git
