@@ -28,6 +28,14 @@ class TranslateCommand(commands.Cog):
 
         return data['data']
 
+    async def do_ocr_translate(self, fromlang: str | None, tolang: str, img: bytes):
+        ocr_cog = self.bot.get_cog('OcrCommand')
+        if not ocr_cog:
+            raise commands.errors.DisabledCommand()
+
+        ocr_res: dict = ocr_cog.do_ocr(img) # type: ignore
+        print(ocr_res)
+
     @commands.message_command(name='Auto Translate')
     async def auto_translate(self, inter: disnake.MessageCommandInteraction):
         await inter.response.defer()

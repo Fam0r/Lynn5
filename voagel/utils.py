@@ -44,7 +44,7 @@ async def check_output(args: typing.List[str], timeout: int = 120, raise_on_erro
     return out
 
 class OpenGraphParser(html.parser.HTMLParser):
-    def __init__(self, *, convert_charrefs: bool = ...) -> None:
+    def __init__(self, *, convert_charrefs: bool = True) -> None:
         super().__init__(convert_charrefs=convert_charrefs)
         self.tags = {}
 
