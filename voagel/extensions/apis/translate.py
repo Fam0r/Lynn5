@@ -30,19 +30,21 @@ class TranslateCommand(commands.Cog):
     async def do_translate(self, fromlang: str | None, tolang: str, query: str):
         params = {
             'q': [query],
-            'target': tolang,
-            'key': self.bot.get_api_key('gcp_translate')
+            'tl': tolang,
+            'sl': fromlang if fromlang else 'auto',
+            'dt': 't',
+            'client': 'gtx',
+            'dj': 1,
+            'source': 'input'
         }
-        if fromlang:
-            params['source'] = fromlang
 
-        req = await self.bot.session.post(f'https://translation.googleapis.com/language/translate/v2', params=params)
+        req = await self.bot.session.post(f'https://translation.googleapis.com/translate_a/single', params=params)
         data = await req.json()
 
         if 'error' in data:
             raise Exception('Google Translate returned an error: ' + str(data['error']))
 
-        return data['data']
+        return data
 
     async def do_ocr_translate(self, fromlang: str | None, tolang: str, img: bytes):
         ocr_cog = self.bot.get_cog('OcrCommand')
@@ -59,14 +61,18 @@ class TranslateCommand(commands.Cog):
         query = inter.target.content
         if not query:
             raise Exception('No text found in message.')
-        data = (await self.do_translate(None, 'en', query))['translations'][0]
+        data = await self.do_translate(None, 'en', query)
 
-        inlang = (await self.get_languages()).get(data['detectedSourceLanguage'], data['detectedSourceLanguage'])
+        inlang = (await self.get_languages()).get(data['src'], data['src'])
 
         embed = disnake.Embed(color=EMBED_COLOR)
         embed.add_field(f'From `{inlang}`', f'```\n{query}\n```', inline=False)
-        embed.add_field('To `English`', f'```\n{data["translatedText"]}\n```', inline=False)
+        embed.add_field('To `English`', f'```\n{data["sentences"][0]["trans"]}\n```', inline=False)
         embed.set_footer(text='Google Translate', icon_url=self.bot.get_asset('google_translate.png'))
+
+        if 'confidence' in data:
+            embed.description = f'(confidence: {round(data["confidence"]*100, 2)}%)'
+
         await inter.send(embed=embed)
 
     @commands.slash_command()
@@ -74,7 +80,7 @@ class TranslateCommand(commands.Cog):
         inter: disnake.ApplicationCommandInteraction,
         query: str,
         _from: str = commands.Param('auto', name='from'),
-        to: str = commands.Param('en')
+        to: str = commands.Param('English')
     ):
         """
         Translate stuff using Google Translate. Defaults to Auto-Detect -> English
@@ -102,18 +108,22 @@ class TranslateCommand(commands.Cog):
         if not tocode:
             raise commands.BadArgument(f'No language found by `{to}`')
 
-        data = (await self.do_translate(fromcode, tocode, query))['translations'][0]
+        data = await self.do_translate(fromcode, tocode, query)
 
-        if not fromcode:
-            fromcode = fromlang = data['detectedSourceLanguage']
+        if not fromcode and 'src' in data:
+            fromcode = fromlang = data['src']
             for lang, code in (await self.get_languages()).items():
                 if fromcode == code:
                     fromlang = lang
 
         embed = disnake.Embed(color=EMBED_COLOR)
         embed.add_field(f'From `{fromlang}`', f'```\n{query}\n```', inline=False)
-        embed.add_field(f'To `{tolang}`', f'```\n{data["translatedText"]}\n```', inline=False)
+        embed.add_field(f'To `{tolang}`', f'```\n{data["sentences"][0]["trans"]}\n```', inline=False)
         embed.set_footer(text='Google Translate', icon_url=self.bot.get_asset('google_translate.png'))
+
+        if 'confidence' in data:
+            embed.description = f'(confidence: {round(data["confidence"]*100, 2)}%)'
+
         await inter.send(embed=embed)
 
     @translate.autocomplete('from')
