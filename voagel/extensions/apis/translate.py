@@ -27,21 +27,6 @@ class TranslateCommand(commands.Cog):
 
         return self.gcp_languages
 
-    async def language_autocomplete(self, string: str) -> list[str]:
-        """Autocomplete languages"""
-
-        out = []
-
-        for _, lang in await self.get_languages():
-            try:
-                if string.lower() in lang.lower():
-                    out.append(lang)
-            except Exception:
-                pass
-
-        return out[:25]
-
-
     async def do_translate(self, fromlang: str | None, tolang: str, query: str):
         params = {
             'q': [query],
@@ -88,8 +73,8 @@ class TranslateCommand(commands.Cog):
     async def translate(self,
         inter: disnake.ApplicationCommandInteraction,
         query: str,
-        _from: str = commands.Param('auto', name='from', autocomplete=language_autocomplete),
-        to: str = commands.Param('eng', autocomplete=language_autocomplete)
+        _from: str = commands.Param('auto', name='from'),
+        to: str = commands.Param('eng')
     ):
         """
         Translate stuff using Google Translate. Defaults to Auto-Detect -> English
@@ -127,6 +112,23 @@ class TranslateCommand(commands.Cog):
         embed.add_field(f'To `{outlang}`', f'```\n{data["translatedText"]}\n```', inline=False)
         embed.set_footer(text='Google Translate', icon_url=self.bot.get_asset('google_translate.png'))
         await inter.send(embed=embed)
+
+    @translate.autocomplete('_from')
+    @translate.autocomplete('to')
+    async def language_autocomplete(self, _: disnake.ApplicationCommandInteraction, string: str) -> list[str]:
+        """Autocomplete languages"""
+
+        out = []
+
+        for _, lang in await self.get_languages():
+            try:
+                if string.lower() in lang.lower():
+                    out.append(lang)
+            except Exception:
+                pass
+
+        return out[:25]
+
 
 def setup(bot: Bot):
     bot.add_cog(TranslateCommand(bot))
