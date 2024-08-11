@@ -8,9 +8,9 @@ class TranslateCommand(commands.Cog):
 
     def __init__(self, bot: Bot):
         self.bot = bot
-        self.gcp_languages = []
+        self.gcp_languages: dict[str, str] = {}
 
-    async def get_languages(self) -> Dict[str, str]:
+    async def get_languages(self) -> dict[str, str]:
         if not self.gcp_languages:
             params = {
                 'target': 'en',
@@ -27,7 +27,7 @@ class TranslateCommand(commands.Cog):
 
         return self.gcp_languages
 
-    async def language_autocomplete(self, string: str) -> List[str]:
+    async def language_autocomplete(self, string: str) -> list[str]:
         """Autocomplete languages"""
 
         out = []
