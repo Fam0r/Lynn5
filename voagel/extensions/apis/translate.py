@@ -63,7 +63,11 @@ class TranslateCommand(commands.Cog):
             raise Exception('No text found in message.')
         data = await self.do_translate(None, 'en', query)
 
-        inlang = (await self.get_languages()).get(data['src'], data['src'])
+
+        inlang = data['src']
+        for lang, code in (await self.get_languages()).items():
+            if code == data['src']:
+                inlang = lang
 
         embed = disnake.Embed(color=EMBED_COLOR)
         embed.add_field(f'From `{inlang}`', f'```\n{query}\n```', inline=False)
