@@ -113,7 +113,7 @@ class TranslateCommand(commands.Cog):
         embed.set_footer(text='Google Translate', icon_url=self.bot.get_asset('google_translate.png'))
         await inter.send(embed=embed)
 
-    @translate.autocomplete('_from')
+    @translate.autocomplete('from')
     @translate.autocomplete('to')
     async def language_autocomplete(self, _: disnake.ApplicationCommandInteraction, string: str) -> list[str]:
         """Autocomplete languages"""
