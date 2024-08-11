@@ -120,7 +120,7 @@ class TranslateCommand(commands.Cog):
 
         out = []
 
-        for _, lang in await self.get_languages():
+        for _, lang in (await self.get_languages()).items():
             try:
                 if string.lower() in lang.lower():
                     out.append(lang)
