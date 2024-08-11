@@ -1,15 +1,46 @@
 import disnake
 from disnake.ext import commands
-from pycountry import languages
 
 from voagel.main import Bot, EMBED_COLOR
-from voagel.autocompleters import language_autocomplete
 
 class TranslateCommand(commands.Cog):
     """Translate"""
 
     def __init__(self, bot: Bot):
         self.bot = bot
+        self.gcp_languages = []
+
+    async def get_languages(self) -> Dict[str, str]:
+        if not self.gcp_languages:
+            params = {
+                'target': 'en',
+                'key': self.bot.get_api_key('gcp_translate')
+            }
+            req = await self.bot.session.get(f'https://translation.googleapis.com/language/translate/v2/languages', params=params)
+            data = await req.json()
+
+            if 'error' in data:
+                raise Exception('Google Translate returned an error: ' + str(data['error']))
+
+            for l in data['data']['languages']:
+                self.gcp_languages[l['language']] = l['name']
+
+        return self.gcp_languages
+
+    async def language_autocomplete(self, string: str) -> List[str]:
+        """Autocomplete languages"""
+
+        out = []
+
+        for _, lang in await self.get_languages():
+            try:
+                if string.lower() in lang.lower():
+                    out.append(lang)
+            except Exception:
+                pass
+
+        return out[:25]
+
 
     async def do_translate(self, fromlang: str | None, tolang: str, query: str):
         params = {
@@ -45,11 +76,7 @@ class TranslateCommand(commands.Cog):
             raise Exception('No text found in message.')
         data = (await self.do_translate(None, 'en', query))['translations'][0]
 
-        inlang = languages.get(alpha_2=data['detectedSourceLanguage'])
-        if not inlang:
-            inlang = data['detectedSourceLanguage']
-        else:
-            inlang = inlang.name
+        inlang = (await self.get_languages()).get(data['detectedSourceLanguage'], data['detectedSourceLanguage'])
 
         embed = disnake.Embed(color=EMBED_COLOR)
         embed.add_field(f'From `{inlang}`', f'```\n{query}\n```', inline=False)
@@ -82,28 +109,18 @@ class TranslateCommand(commands.Cog):
         outlang = None
 
         if fromlang:
-            try:
-                fromlang = languages.lookup(fromlang)
-                inlang = fromlang.name
-                fromlang = fromlang.alpha_2
-            except Exception as e:
-                raise commands.BadArgument(f'No language found by `{_from}`') from e
+            inlang = (await self.get_languages()).get(fromlang)
+            if not inlang:
+                raise commands.BadArgument(f'No language found by `{_from}`')
 
-        try:
-            tolang = languages.lookup(tolang)
-            outlang = tolang.name
-            tolang = tolang.alpha_2
-        except Exception as e:
-            raise commands.BadArgument(f'No language found by `{to}`') from e
+        outlang = (await self.get_languages()).get(tolang)
+        if not outlang:
+            raise commands.BadArgument(f'No language found by `{to}`')
 
         data = (await self.do_translate(fromlang, tolang, query))['translations'][0]
 
         if not inlang:
-            inlang = languages.get(alpha_2=data['detectedSourceLanguage'])
-            if not inlang:
-                inlang = data['detectedSourceLanguage']
-            else:
-                inlang = inlang.name
+            inlang = (await self.get_languages()).get(data['detectedSourceLanguage'], data['detectedSourceLanguage'])
 
         embed = disnake.Embed(color=EMBED_COLOR)
         embed.add_field(f'From `{inlang}`', f'```\n{query}\n```', inline=False)
