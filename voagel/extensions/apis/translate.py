@@ -23,7 +23,7 @@ class TranslateCommand(commands.Cog):
                 raise Exception('Google Translate returned an error: ' + str(data['error']))
 
             for l in data['data']['languages']:
-                self.gcp_languages[l['language']] = l['name']
+                self.gcp_languages[l['name']] = l['language']
 
         return self.gcp_languages
 
@@ -74,7 +74,7 @@ class TranslateCommand(commands.Cog):
         inter: disnake.ApplicationCommandInteraction,
         query: str,
         _from: str = commands.Param('auto', name='from'),
-        to: str = commands.Param('eng')
+        to: str = commands.Param('en')
     ):
         """
         Translate stuff using Google Translate. Defaults to Auto-Detect -> English
@@ -90,26 +90,29 @@ class TranslateCommand(commands.Cog):
 
         fromlang = _from if _from != 'auto' else None
         tolang = to
-        inlang = None
-        outlang = None
+        fromcode = None
+        tocode = None
 
         if fromlang:
-            inlang = (await self.get_languages()).get(fromlang)
-            if not inlang:
-                raise commands.BadArgument(f'No language found by `{_from}`')
+            fromcode = (await self.get_languages()).get(fromlang)
+            if not fromcode:
+                raise commands.BadArgument(f'No language found by `{fromlang}`')
 
-        outlang = (await self.get_languages()).get(tolang)
-        if not outlang:
+        tocode = (await self.get_languages()).get(tolang)
+        if not tocode:
             raise commands.BadArgument(f'No language found by `{to}`')
 
-        data = (await self.do_translate(fromlang, tolang, query))['translations'][0]
+        data = (await self.do_translate(fromcode, tocode, query))['translations'][0]
 
-        if not inlang:
-            inlang = (await self.get_languages()).get(data['detectedSourceLanguage'], data['detectedSourceLanguage'])
+        if not fromcode:
+            fromcode = fromlang = data['detectedSourceLanguage']
+            for lang, code in (await self.get_languages()).items():
+                if fromcode == code:
+                    fromlang = lang
 
         embed = disnake.Embed(color=EMBED_COLOR)
-        embed.add_field(f'From `{inlang}`', f'```\n{query}\n```', inline=False)
-        embed.add_field(f'To `{outlang}`', f'```\n{data["translatedText"]}\n```', inline=False)
+        embed.add_field(f'From `{fromlang}`', f'```\n{query}\n```', inline=False)
+        embed.add_field(f'To `{tolang}`', f'```\n{data["translatedText"]}\n```', inline=False)
         embed.set_footer(text='Google Translate', icon_url=self.bot.get_asset('google_translate.png'))
         await inter.send(embed=embed)
 
@@ -120,7 +123,7 @@ class TranslateCommand(commands.Cog):
 
         out = []
 
-        for _, lang in (await self.get_languages()).items():
+        for lang, _ in (await self.get_languages()).items():
             try:
                 if string.lower() in lang.lower():
                     out.append(lang)
