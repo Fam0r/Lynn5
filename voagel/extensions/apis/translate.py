@@ -38,7 +38,7 @@ class TranslateCommand(commands.Cog):
             'source': 'input'
         }
 
-        req = await self.bot.session.post(f'https://translation.googleapis.com/translate_a/single', params=params)
+        req = await self.bot.session.post(f'https://translate.googleapis.com/translate_a/single', params=params)
         data = await req.json()
 
         if 'error' in data:
@@ -70,7 +70,7 @@ class TranslateCommand(commands.Cog):
         embed.add_field('To `English`', f'```\n{data["sentences"][0]["trans"]}\n```', inline=False)
         embed.set_footer(text='Google Translate', icon_url=self.bot.get_asset('google_translate.png'))
 
-        if 'confidence' in data:
+        if 'confidence' in data and data['confidence'] < 1.0:
             embed.description = f'(confidence: {round(data["confidence"]*100, 2)}%)'
 
         await inter.send(embed=embed)
@@ -121,7 +121,7 @@ class TranslateCommand(commands.Cog):
         embed.add_field(f'To `{tolang}`', f'```\n{data["sentences"][0]["trans"]}\n```', inline=False)
         embed.set_footer(text='Google Translate', icon_url=self.bot.get_asset('google_translate.png'))
 
-        if 'confidence' in data:
+        if 'confidence' in data and data['confidence'] < 1.0:
             embed.description = f'(confidence: {round(data["confidence"]*100, 2)}%)'
 
         await inter.send(embed=embed)
