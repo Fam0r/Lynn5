@@ -2,5 +2,4 @@ yt-dlp
 disnake >= 2.9.1
 howlongtobeatpy >= 1.0.5
 feedparser >= 6.0.11
-pycountry >= 23.12.11
 mmh3 >= 4.1.0
