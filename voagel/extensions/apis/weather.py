@@ -1,5 +1,6 @@
-import disnake
-from disnake.ext import commands
+import discord
+from discord.ext import commands
+from discord import app_commands
 import datetime
 from urllib.parse import quote
 
@@ -30,9 +31,9 @@ class WeatherCommand(commands.Cog):
 
         return EMBED_COLOR
 
-    @commands.slash_command()
+    @app_commands.command()
     async def weather(self,
-        inter: disnake.ApplicationCommandInteraction,
+        inter: discord.Interaction,
         location: str
     ):
         """What's the weather like?
@@ -58,10 +59,10 @@ class WeatherCommand(commands.Cog):
                 raise Exception(data['error']['message'])
             raise Exception('Unknown error occured')
 
-        embed = disnake.Embed(title=geocoding[0]['display_name'])
-        embed.set_thumbnail(f"https:{data['current']['condition']['icon']}".replace('64x64', '128x128'))
+        embed = discord.Embed(title=geocoding[0]['display_name'])
+        embed.set_thumbnail(url=f"https:{data['current']['condition']['icon']}".replace('64x64', '128x128'))
 
-        embed.add_field(data['current']['condition']['text'], f"**Temperature**: {data['current']['temp_c']}°C ({data['current']['temp_f']}°F)\n" \
+        embed.add_field(name=data['current']['condition']['text'], value=f"**Temperature**: {data['current']['temp_c']}°C ({data['current']['temp_f']}°F)\n" \
         + f"**Feels Like**: {data['current']['feelslike_c']}°C ({data['current']['feelslike_f']}°F)\n" \
         + f"**Humidity**: {data['current']['humidity']}%\n" \
         + f"**Clouds**: {data['current']['cloud']}%\n" \
@@ -76,14 +77,14 @@ class WeatherCommand(commands.Cog):
             alerts.append(alert['desc'])
 
             title = alert['severity']+' ' if alert['severity'] else '' + alert['msgtype'] if alert['msgtype'] else ''
-            embed.add_field(f"{title+': ' if title else ''}{alert['headline']}", (f"**{alert['event']}**" + ('\n'+alert['desc'] if alert['desc'] else ''))[:1024])
+            embed.add_field(name=f"{title+': ' if title else ''}{alert['headline']}", value=(f"**{alert['event']}**" + ('\n'+alert['desc'] if alert['desc'] else ''))[:1024])
 
 
         embed.colour = self.get_embed_color(data)
         embed.set_footer(text='Powered by WeatherAPI.com and OpenStreetMap') # TODO: Missing icon
         embed.timestamp = datetime.datetime.fromtimestamp(data['current']['last_updated_epoch'], tz=datetime.timezone.utc)
 
-        await inter.send(embed=embed)
+        await inter.response.send_message(embed=embed)
 
-def setup(bot: Bot):
-    bot.add_cog(WeatherCommand(bot))
+async def setup(bot: Bot):
+    await bot.add_cog(WeatherCommand(bot))

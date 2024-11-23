@@ -1,11 +1,12 @@
-import disnake
-from disnake.ext import commands
+import discord
+from discord.ext import commands
+from discord import app_commands
 from datetime import datetime
 from urllib.parse import quote
 from voagel.main import EMBED_COLOR, Bot
 from voagel.utils import timedelta_format
 
-class ClassicubeCommand(commands.Cog):
+class ClassicubeCommand(commands.GroupCog, name='classicube'):
     """Classicube commands"""
 
     def __init__(self, bot: Bot):
@@ -22,13 +23,9 @@ class ClassicubeCommand(commands.Cog):
         'r': 'Recovering account'
     }
 
-    @commands.slash_command()
-    async def classicube(self, _: disnake.ApplicationCommandInteraction):
-        ...
-
-    @classicube.sub_command()
+    @app_commands.command()
     async def player(self,
-        inter: disnake.ApplicationCommandInteraction,
+        inter: discord.Interaction,
         username: str
     ):
         """Looks up information about a player
@@ -46,7 +43,7 @@ class ClassicubeCommand(commands.Cog):
             raise Exception(data['error'] if data and data['error'] else 'User not found')
 
         flags = data['flags']
-        embed = disnake.Embed(title='ClassiCube User', colour=EMBED_COLOR)
+        embed = discord.Embed(title='ClassiCube User', colour=EMBED_COLOR)
         embed.set_footer(text=f'Classicube • ID: {data["id"]}', icon_url=self.bot.get_asset('cc-cube.png'))
         embed.timestamp = datetime.now()
         delta = datetime.now() - datetime.fromtimestamp(data['registered'])
@@ -60,7 +57,7 @@ class ClassicubeCommand(commands.Cog):
         if data['forum_title']:
             embed.add_field(name='Legacy forum Title', value=data['forum_title'])
 
-        await inter.send(embed=embed)
+        await inter.response.send_message(embed=embed)
 
-def setup(bot: Bot):
-    bot.add_cog(ClassicubeCommand(bot))
+async def setup(bot: Bot):
+    await bot.add_cog(ClassicubeCommand(bot))

@@ -1,5 +1,6 @@
-import disnake
-from disnake.ext import commands
+import discord
+from discord.ext import commands
+from discord import app_commands
 
 from voagel.main import Bot
 
@@ -9,13 +10,13 @@ class ModCommands(commands.Cog):
     def __init__(self, bot: Bot):
         self.bot = bot
 
-    @commands.slash_command(name='hackban')
+    @app_commands.command(name='hackban')
     @commands.guild_only()
     @commands.bot_has_permissions(ban_members=True)
-    @commands.default_member_permissions(ban_members=True)
+    @commands.has_permissions(ban_members=True)
     async def hackban(self,
-        inter: disnake.ApplicationCommandInteraction,
-        id: disnake.Object,
+        inter: discord.Interaction,
+        id: int,
         reason: str = ''
     ):
         """Ban an user by their ID
@@ -26,18 +27,19 @@ class ModCommands(commands.Cog):
         reason: Reason
         """
         assert inter.guild
-        await inter.guild.ban(id, reason=reason, delete_message_days=0)
-        baninfo = await inter.guild.fetch_ban(id)
-        await inter.send(f'{baninfo.user.name}#{baninfo.user.discriminator} has been banned.')
+        snowflake = discord.Object(id)
+        await inter.guild.ban(snowflake, reason=reason, delete_message_days=0)
+        baninfo = await inter.guild.fetch_ban(snowflake)
+        await inter.response.send_message(f'{baninfo.user.name}#{baninfo.user.discriminator} has been banned.')
 
-    @commands.slash_command(name='purge')
+    @app_commands.command(name='purge')
     @commands.guild_only()
     @commands.bot_has_permissions(manage_messages=True)
-    @commands.default_member_permissions(manage_messages=True)
+    @commands.has_permissions(manage_messages=True)
     async def purge(self,
-        inter: disnake.ApplicationCommandInteraction,
-        count: int = commands.Param(gt=0, le=100),
-        user: disnake.Member | None = None
+        inter: discord.Interaction,
+        count: app_commands.Range[int, 0, 100],
+        user: discord.Member | None = None
     ):
         """Purge the last {count} messages from the channel.
 
@@ -46,14 +48,14 @@ class ModCommands(commands.Cog):
         count: How many messages to purge
         user: Only purge messages from a specific user
         """
-        assert isinstance(inter.channel, disnake.guild.GuildMessageable)
+        assert isinstance(inter.channel, discord.TextChannel)
 
         if user:
             deleted = await inter.channel.purge(limit=count, check=lambda m: m.author.id == user.id)
         else:
             deleted = await inter.channel.purge(limit=count)
 
-        await inter.send(f'Deleted {len(deleted)} messages.', ephemeral=True)
+        await inter.response.send_message(f'Deleted {len(deleted)} messages.', ephemeral=True)
 
-def setup(bot: Bot):
-    bot.add_cog(ModCommands(bot))
+async def setup(bot: Bot):
+    await bot.add_cog(ModCommands(bot))

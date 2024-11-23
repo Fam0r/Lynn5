@@ -2,8 +2,9 @@ import math
 import operator
 import re
 
-import disnake
-from disnake.ext import commands
+import discord
+from discord.ext import commands
+from discord import app_commands
 
 from voagel.main import Bot, EMBED_COLOR
 
@@ -317,9 +318,9 @@ class CalculatorCommand(commands.Cog):
     def __init__(self, bot: Bot):
         self.bot = bot
 
-    @commands.slash_command()
+    @app_commands.command()
     async def calculator(self,
-        inter: disnake.ApplicationCommandInteraction,
+        inter: discord.Interaction,
         expression: str
     ):
         """Math
@@ -334,11 +335,11 @@ class CalculatorCommand(commands.Cog):
         expr = to_rpn(expr)
         expr = eval_rpn(expr)
 
-        embed = disnake.Embed()
+        embed = discord.Embed()
         embed.set_author(name=orig_expr)
         embed.description = f'> {expr}'
 
-        await inter.send(embed=embed)
+        await inter.response.send_message(embed=embed)
 
-def setup(bot: Bot):
-    bot.add_cog(CalculatorCommand(bot))
+async def setup(bot: Bot):
+    await bot.add_cog(CalculatorCommand(bot))

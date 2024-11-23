@@ -1,5 +1,6 @@
-import disnake
-from disnake.ext import commands
+import discord
+from discord.ext import commands
+from discord import app_commands
 
 from voagel.main import Bot, EMBED_COLOR
 
@@ -9,6 +10,10 @@ class TranslateCommand(commands.Cog):
     def __init__(self, bot: Bot):
         self.bot = bot
         self.gcp_languages: dict[str, str] = {}
+        self.bot.tree.add_command(app_commands.ContextMenu(
+            name='Auto Translate',
+            callback=self.auto_translate
+        ))
 
     async def get_languages(self) -> dict[str, str]:
         if not self.gcp_languages:
@@ -54,11 +59,10 @@ class TranslateCommand(commands.Cog):
         ocr_res: dict = ocr_cog.do_ocr(img) # type: ignore
         print(ocr_res)
 
-    @commands.message_command(name='Auto Translate')
-    async def auto_translate(self, inter: disnake.MessageCommandInteraction):
+    async def auto_translate(self, inter: discord.Interaction, message: discord.Message):
         await inter.response.defer()
 
-        query = inter.target.content
+        query = message.content
         if not query:
             raise Exception('No text found in message.')
         data = await self.do_translate(None, 'en', query)
@@ -69,22 +73,23 @@ class TranslateCommand(commands.Cog):
             if code == data['src']:
                 inlang = lang
 
-        embed = disnake.Embed(color=EMBED_COLOR)
-        embed.add_field(f'From `{inlang}`', f'```\n{query}\n```', inline=False)
-        embed.add_field('To `English`', f'```\n{data["sentences"][0]["trans"]}\n```', inline=False)
+        embed = discord.Embed(color=EMBED_COLOR)
+        embed.add_field(name=f'From `{inlang}`', value=f'```\n{query}\n```', inline=False)
+        embed.add_field(name='To `English`', value=f'```\n{data["sentences"][0]["trans"]}\n```', inline=False)
         embed.set_footer(text='Google Translate', icon_url=self.bot.get_asset('google_translate.png'))
 
         if 'confidence' in data and data['confidence'] < 1.0:
             embed.description = f'(confidence: {round(data["confidence"]*100, 2)}%)'
 
-        await inter.send(embed=embed)
+        await inter.response.send_message(embed=embed)
 
-    @commands.slash_command()
+    @app_commands.rename(_from='from')
+    @app_commands.command()
     async def translate(self,
-        inter: disnake.ApplicationCommandInteraction,
+        inter: discord.Interaction,
         query: str,
-        _from: str = commands.Param('auto', name='from'),
-        to: str = commands.Param('English')
+        _from: str = 'auto',
+        to: str = 'English'
     ):
         """
         Translate stuff using Google Translate. Defaults to Auto-Detect -> English
@@ -120,32 +125,34 @@ class TranslateCommand(commands.Cog):
                 if fromcode == code:
                     fromlang = lang
 
-        embed = disnake.Embed(color=EMBED_COLOR)
-        embed.add_field(f'From `{fromlang}`', f'```\n{query}\n```', inline=False)
-        embed.add_field(f'To `{tolang}`', f'```\n{data["sentences"][0]["trans"]}\n```', inline=False)
+        embed = discord.Embed(color=EMBED_COLOR)
+        embed.add_field(name=f'From `{fromlang}`', value=f'```\n{query}\n```', inline=False)
+        embed.add_field(name=f'To `{tolang}`', value=f'```\n{data["sentences"][0]["trans"]}\n```', inline=False)
         embed.set_footer(text='Google Translate', icon_url=self.bot.get_asset('google_translate.png'))
 
         if 'confidence' in data and data['confidence'] < 1.0:
             embed.description = f'(confidence: {round(data["confidence"]*100, 2)}%)'
 
-        await inter.send(embed=embed)
+        await inter.response.send_message(embed=embed)
 
-    @translate.autocomplete('from')
+    @translate.autocomplete('_from')
     @translate.autocomplete('to')
-    async def language_autocomplete(self, _: disnake.ApplicationCommandInteraction, string: str) -> list[str]:
+    async def language_autocomplete(self, _: discord.Interaction, string: str) -> list[app_commands.Choice[str]]:
         """Autocomplete languages"""
 
         out = []
 
-        for lang, _ in (await self.get_languages()).items():
+        for lang, __ in (await self.get_languages()).items():
             try:
                 if string.lower() in lang.lower():
                     out.append(lang)
             except Exception:
                 pass
 
-        return out[:25]
+        return [
+                app_commands.Choice(name=x, value=x) for x in out[:25]
+        ]
 
 
-def setup(bot: Bot):
-    bot.add_cog(TranslateCommand(bot))
+async def setup(bot: Bot):
+    await bot.add_cog(TranslateCommand(bot))

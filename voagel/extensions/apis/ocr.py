@@ -2,8 +2,9 @@ import re
 import base64
 from io import BytesIO
 
-import disnake
-from disnake.ext import commands
+import discord
+from discord.ext import commands
+from discord import app_commands
 from voagel.main import Bot, EMBED_COLOR
 
 SUPPORTED_MIMES = ['image/jpeg', 'image/png', 'image/gif', 'image/webp']
@@ -13,6 +14,10 @@ class OCRCommand(commands.Cog):
 
     def __init__(self, bot: Bot):
         self.bot = bot
+        self.bot.tree.add_command(app_commands.ContextMenu(
+            name='Auto OCR',
+            callback=self.auto_ocr
+        ))
 
     async def do_ocr(self, img: bytes) -> dict:
         data={'requests': [{
@@ -27,15 +32,14 @@ class OCRCommand(commands.Cog):
 
         return j['responses'][0]
 
-    @commands.message_command(name='Auto OCR')
-    async def auto_ocr(self, inter: disnake.MessageCommandInteraction):
+    async def auto_ocr(self, inter: discord.Interaction, message: discord.Message):
         """
         OCR.
         """
-        if len(inter.target.attachments) > 0:
-            link = inter.target.attachments[0].url
+        if len(message.attachments) > 0:
+            link = message.attachments[0].url
         else:
-            link = re.search(r'https?://\S+', inter.target.content)
+            link = re.search(r'https?://\S+', message.content)
             if not link:
                 raise Exception('Could not find an image in the specified message.')
             link = link.group()
@@ -51,16 +55,18 @@ class OCRCommand(commands.Cog):
         if not res['fullTextAnnotation']:
             raise Exception('Did not detect text.')
         else:
-            embed = disnake.Embed(color=EMBED_COLOR)
+            embed = discord.Embed(color=EMBED_COLOR)
             embed.set_footer(text='Google Cloud Vision', icon_url=self.bot.get_asset('gcp.png'))
             embed.description = f'```\n{res["fullTextAnnotation"]["text"]}\n```'
-            embed.set_thumbnail(file=disnake.File(fp=BytesIO(img), filename=link.split('/')[-1].split('?')[0]))
-            await inter.send(embed=embed)
+            filename = link.split('/')[-1].split('?')[0]
+            file = discord.File(fp=BytesIO(img), filename=filename)
+            embed.set_thumbnail(url=f'attachment://{filename}')
+            await inter.response.send_message(embed=embed, file=file)
 
-    @commands.slash_command(name='ocr')
+    @app_commands.command(name='ocr')
     async def ocr(self,
-        inter: disnake.ApplicationCommandInteraction,
-        attachment: disnake.Attachment | None = None,
+        inter: discord.Interaction,
+        attachment: discord.Attachment | None = None,
         link: str | None = None
     ):
         """
@@ -91,11 +97,13 @@ class OCRCommand(commands.Cog):
         if not res['fullTextAnnotation']:
             raise Exception('Did not detect text.')
         else:
-            embed = disnake.Embed(color=EMBED_COLOR)
+            embed = discord.Embed(color=EMBED_COLOR)
             embed.set_footer(text='Google Cloud Vision', icon_url=self.bot.get_asset('gcp.png'))
             embed.description = f'```\n{res["fullTextAnnotation"]["text"]}\n```'
-            embed.set_thumbnail(file=disnake.File(fp=BytesIO(img), filename=link.split('/')[-1].split('?')[0]))
-            await inter.send(embed=embed)
+            filename = link.split('/')[-1].split('?')[0]
+            file = discord.File(fp=BytesIO(img), filename=filename)
+            embed.set_thumbnail(url=f'attachment://{filename}')
+            await inter.response.send_message(embed=embed, file=file)
 
-def setup(bot: Bot):
-    bot.add_cog(OCRCommand(bot))
+async def setup(bot: Bot):
+    await bot.add_cog(OCRCommand(bot))

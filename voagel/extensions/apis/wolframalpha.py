@@ -1,7 +1,8 @@
 from io import BytesIO
 from urllib.parse import quote
-import disnake
-from disnake.ext import commands
+import discord
+from discord.ext import commands
+from discord import app_commands
 
 from voagel.main import Bot, EMBED_COLOR
 
@@ -12,9 +13,9 @@ class WolframAlphaCommand(commands.Cog):
     def __init__(self, bot: Bot):
         self.bot = bot
 
-    @commands.slash_command()
+    @app_commands.command()
     async def wolframalpha(self,
-        inter: disnake.ApplicationCommandInteraction,
+        inter: discord.Interaction,
         query: str
     ):
         """
@@ -43,11 +44,12 @@ class WolframAlphaCommand(commands.Cog):
         if len(data) == 0:
             raise Exception('WolframAlpha did not return any data.')
 
-        embed = disnake.Embed(color=EMBED_COLOR)
-        embed.set_image(disnake.File(BytesIO(data), 'wolfram.png'))
+        embed = discord.Embed(color=EMBED_COLOR)
+        file=discord.File(BytesIO(data), 'wolfram.png')
+        embed.set_image(url='attachment://wolfram.png')
         embed.set_footer(text='Wolfram Alpha', icon_url=self.bot.get_asset('wolfram.png'))
-        await inter.send(embed=embed)
+        await inter.response.send_message(embed=embed, file=file)
 
 
-def setup(bot: Bot):
-    bot.add_cog(WolframAlphaCommand(bot))
+async def setup(bot: Bot):
+    await bot.add_cog(WolframAlphaCommand(bot))

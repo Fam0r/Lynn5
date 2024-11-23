@@ -1,5 +1,6 @@
-import disnake
-from disnake.ext import commands
+import discord
+from discord.ext import commands
+from discord import app_commands
 
 from voagel.main import Bot
 
@@ -9,10 +10,10 @@ class PingCommand(commands.Cog):
     def __init__(self, bot: Bot):
         self.bot = bot
 
-    @commands.slash_command()
-    async def ping(self, inter: disnake.ApplicationCommandInteraction):
+    @app_commands.command()
+    async def ping(self, inter: discord.Interaction):
         """Get the bot's current websocket latency."""
         await inter.response.send_message(f"pong: {round(self.bot.latency * 1000)}ms")
 
-def setup(bot: Bot):
-    bot.add_cog(PingCommand(bot))
+async def setup(bot: Bot):
+    await bot.add_cog(PingCommand(bot))

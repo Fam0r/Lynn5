@@ -3,8 +3,9 @@ import tempfile
 import functools
 import asyncio
 
-import disnake
-from disnake.ext import commands
+import discord
+from discord.ext import commands
+from discord import app_commands
 
 from voagel.main import Bot
 from voagel.utils import bytes2human, re_encode
@@ -20,9 +21,9 @@ class YtdlCommand(commands.Cog):
     def __init__(self, bot: Bot):
         self.bot = bot
 
-    @commands.slash_command(name='dl')
+    @app_commands.command(name='dl')
     async def ytdl(self,
-        inter: disnake.ApplicationCommandInteraction,
+        inter: discord.Interaction,
         link: str
     ):
         """Download any video on the internet
@@ -56,14 +57,14 @@ class YtdlCommand(commands.Cog):
                         raise yt_dl.DownloadError('Cannot download a livestream')
                     if 'filesize' in info and info['filesize']:
                         if info['filesize'] > 26214400:
-                            await inter.delete_original_message()
+                            await inter.delete_original_response()
                             raise yt_dl.DownloadError(f'File is too large! ({bytes2human(info["filesize"])})')
                     elif 'filesize_approx' in info and info['filesize_approx']:
                         if info['filesize_approx'] > 28214400:
-                            await inter.delete_original_message()
+                            await inter.delete_original_response()
                             raise yt_dl.DownloadError(f'File is too large! ({bytes2human(info["filesize_approx"])})')
                     else:
-                        await inter.edit_original_message('Could not estimate the size of the file. This download might not finish.')
+                        await inter.edit_original_response(content='Could not estimate the size of the file. This download might not finish.')
 
                 future = self.bot.loop.run_in_executor(None, ydl.download, link)
                 await asyncio.wait_for(future, 120) # Timeout download after 120 second # WARN: This does not kill the ytdl download, it just gives up waiting for it. The download will stay in the background, draining system resources
@@ -76,10 +77,10 @@ class YtdlCommand(commands.Cog):
                 if size > 26214400: # 25 MiB
                     raise yt_dl.DownloadError(f'File is too large! ({bytes2human(size)})')
 
-                file = disnake.File(fp, filename=info['id'] + '.' + info['ext'], description='Source: ' + link)
-                await inter.edit_original_message('', file=file)
+                file = discord.File(fp, filename=info['id'] + '.' + info['ext'], description='Source: ' + link)
+                await inter.edit_original_response(content='', attachments=[file])
             except FileNotFoundError as e:
                 raise yt_dl.DownloadError('Could not download video.') from e
 
-def setup(bot: Bot):
-    bot.add_cog(YtdlCommand(bot))
+async def setup(bot: Bot):
+    await bot.add_cog(YtdlCommand(bot))

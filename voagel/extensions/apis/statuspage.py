@@ -1,7 +1,9 @@
 from datetime import datetime, UTC
+from typing import Literal
 
-import disnake
-from disnake.ext import commands
+import discord
+from discord.ext import commands
+from discord import app_commands
 from voagel.main import Bot, EMBED_COLOR
 
 statusPages = {
@@ -28,10 +30,10 @@ class StatuspageComamnd(commands.Cog):
     def __init__(self, bot: Bot):
         self.bot = bot
 
-    @commands.slash_command()
+    @app_commands.command()
     async def statuspage(self,
-        inter: disnake.ApplicationCommandInteraction,
-        service: str = commands.Param(choices=list(statusPages.keys()))
+        inter: discord.Interaction,
+        service: Literal['Discord', 'Twitter', 'Reddit', 'Cloudflare', 'Dropbox', 'GitHub', 'Medium', 'Epic Games', 'Glitch', 'OpenAI', 'Proton', 'Akamai']
     ):
         """Shows status pages of different services.
 
@@ -55,14 +57,14 @@ class StatuspageComamnd(commands.Cog):
             col = 0xff0000
 
         embeds = []
-        embed = disnake.Embed(title=f"**{service} Status** - {j['status']['description']}", colour=col, url=page[0])
+        embed = discord.Embed(title=f"**{service} Status** - {j['status']['description']}", colour=col, url=page[0])
         embed.timestamp = datetime.now(UTC)
         for comp in j['components']:
-            embed.add_field(comp['name'], comp['status'].replace('_', ' ').title())
+            embed.add_field(name=comp['name'], value=comp['status'].replace('_', ' ').title())
 
         if page[1]:
             # Seperate component and metric statuses by using an invisible field
-            embed.add_field('\U00002063', '\U00002063', inline=False)
+            embed.add_field(name='\U00002063', value='\U00002063', inline=False)
             for metric in page[1]:
                 req = await self.bot.session.get(f'{page[0]}/metrics-display/{metric}/day.json')
                 m = await req.json()
@@ -70,7 +72,7 @@ class StatuspageComamnd(commands.Cog):
                     continue
                 last = m['summary']['last']
                 last = str(round(last, 2)) if last else '0'
-                embed.add_field(m['metrics'][0]['metric']['name'], last)
+                embed.add_field(name=m['metrics'][0]['metric']['name'], value=last)
 
         embeds.append(embed)
 
@@ -84,9 +86,9 @@ class StatuspageComamnd(commands.Cog):
             else:
                 col = 0xff0000
 
-            embed = disnake.Embed(title='**' + incident['status'].replace('_', ' ').title() + '** - ' + incident['name'], color=col)
+            embed = discord.Embed(title='**' + incident['status'].replace('_', ' ').title() + '** - ' + incident['name'], color=col)
             if firstUpdate['affected_components']:
-                embed.add_field('Affected components', '\n'.join(c['name'] for c in firstUpdate['affected_components']))
+                embed.add_field(name='Affected components', value='\n'.join(c['name'] for c in firstUpdate['affected_components']))
             if firstUpdate != lastUpdate and len(firstUpdate) + len(lastUpdate) + 5 < 1900:
                 embed.description = '**' + datetime.fromisoformat(lastUpdate['created_at'].rstrip('Z')).strftime('%b %d %H:%M:%S %Y UTC%z') \
                                   + '**: ' + lastUpdate['body'] + '\n\n\n**' \
@@ -105,9 +107,9 @@ class StatuspageComamnd(commands.Cog):
             embeds.append(embed)
 
         if len(embeds) > 10:
-            await inter.send(f'Only showing 10 incidents. {len(embeds)} total', embeds=embeds[:10])
+            await inter.response.send_message(f'Only showing 10 incidents. {len(embeds)} total', embeds=embeds[:10])
         else:
-            await inter.send(embeds=embeds[:10])
+            await inter.response.send_message(embeds=embeds[:10])
 
-def setup(bot: Bot):
-    bot.add_cog(StatuspageComamnd(bot))
+async def setup(bot: Bot):
+    await bot.add_cog(StatuspageComamnd(bot))

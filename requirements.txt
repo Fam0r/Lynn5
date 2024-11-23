@@ -1,5 +1,5 @@
 yt-dlp
-disnake >= 2.9.1
+discord.py >= 2.4.0
 howlongtobeatpy >= 1.0.5
 feedparser >= 6.0.11
 mmh3 >= 4.1.0

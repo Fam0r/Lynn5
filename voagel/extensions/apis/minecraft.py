@@ -1,5 +1,6 @@
-import disnake
-from disnake.ext import commands
+import discord
+from discord.ext import commands
+from discord import app_commands
 from typing import Any
 import json
 import base64
@@ -11,7 +12,7 @@ from io import BytesIO
 from voagel.main import Bot, EMBED_COLOR
 
 
-class MinecraftCommands(commands.Cog):
+class MinecraftCommands(commands.GroupCog, name='minecraft'):
     """Minecraft Commands"""
 
     def __init__(self, bot: Bot):
@@ -67,7 +68,7 @@ class MinecraftCommands(commands.Cog):
         'reset': '\033[0m',
     }
 
-    async def get_UUID(self, name: str) -> (str, str):
+    async def get_UUID(self, name: str) -> tuple[str, str]:
         req = await self.bot.session.get(f'https://api.mojang.com/users/profiles/minecraft/{name}')
         if req.status == 200:
             j = json.loads(await req.text())
@@ -164,13 +165,9 @@ class MinecraftCommands(commands.Cog):
         return byte
 
 
-    @commands.slash_command()
-    async def minecraft(self, _: disnake.ApplicationCommandInteraction):
-        ...
-
-    @minecraft.sub_command()
+    @app_commands.command()
     async def player(self,
-        inter: disnake.ApplicationCommandInteraction,
+        inter: discord.Interaction,
         username: str
     ):
         """Looks up information about a player
@@ -185,7 +182,7 @@ class MinecraftCommands(commands.Cog):
         skin = await self.get_skin(uuid)
 
         embeds = []
-        embed = disnake.Embed(color=EMBED_COLOR)
+        embed = discord.Embed(color=EMBED_COLOR)
         embed.set_author(name=user, icon_url=f'https://crafatar.com/avatars/{uuid}.png')
         embed.set_footer(text=f'Minecraft', icon_url=self.bot.get_asset('minecraft.png'))
         embed.timestamp = datetime.now()
@@ -199,19 +196,19 @@ class MinecraftCommands(commands.Cog):
         embeds.append(embed)
 
         if 'CAPE' in skin['textures']:
-            embed = disnake.Embed(title='Minecraft Cape', color=EMBED_COLOR)
+            embed = discord.Embed(title='Minecraft Cape', color=EMBED_COLOR)
             embed.set_author(name=user, icon_url=f'https://crafatar.com/avatars/{uuid}.png')
             embed.set_image(url=skin['textures']['CAPE']['url'])
             embeds.append(embed)
 
         of = await self.bot.session.get(f'http://s.optifine.net/capes/{user}.png')
         if of.status == 200:
-            embed = disnake.Embed(title='Optifine Cape', color=EMBED_COLOR)
+            embed = discord.Embed(title='Optifine Cape', color=EMBED_COLOR)
             embed.set_author(name=user, icon_url=f'https://crafatar.com/avatars/{uuid}.png')
             embed.set_image(url=f'http://s.optifine.net/capes/{user}.png')
             embeds.append(embed)
 
-        await inter.send(embeds=embeds)
+        await inter.response.send_message(embeds=embeds)
 
     def query_server(self, ip: str, port: str) -> dict[str, Any]:
         valid = False
@@ -243,9 +240,9 @@ class MinecraftCommands(commands.Cog):
                 raise Exception('Could not connect to server. Make sure the IP is valid.') from e
             raise e
 
-    @minecraft.sub_command()
+    @app_commands.command()
     async def server(self,
-        inter: disnake.ApplicationCommandInteraction,
+        inter: discord.Interaction,
         address: str
     ):
         """Looks up information about a server
@@ -261,14 +258,15 @@ class MinecraftCommands(commands.Cog):
 
         data = await self.bot.loop.run_in_executor(None, self.query_server, ip, port)
 
-        embed = disnake.Embed(color=EMBED_COLOR)
+        embed = discord.Embed(color=EMBED_COLOR)
         embed.timestamp = datetime.utcnow()
         embed.title = ip + (f':{port}' if port != 25565 else '')
         embed.set_footer(text='Minecraft', icon_url=self.bot.get_asset('minecraft.png'))
 
+        favicon = None
         if 'favicon' in data and data['favicon']:
-            favicon = disnake.File(BytesIO(base64.b64decode(data['favicon'].replace('data:image/png;base64,', ''))), 'pack.png')
-            embed.set_thumbnail(file=favicon)
+            favicon = discord.File(BytesIO(base64.b64decode(data['favicon'].replace('data:image/png;base64,', ''))), 'pack.png')
+            embed.set_thumbnail(url='attachment://pack.png')
         else:
             embed.set_thumbnail(url=self.bot.get_asset('mc_server.png'))
 
@@ -317,9 +315,9 @@ class MinecraftCommands(commands.Cog):
                     description += data['description'][i]
         embed.description = f'```ansi\n{description}\n```'
 
-        embed.add_field('Version', data['version']['name'])
-        embed.add_field('Players', f"{data['players']['online']}/{data['players']['max']}")
-        embed.add_field('Ping', f"{data['ping']}ms")
+        embed.add_field(name='Version', value=data['version']['name'])
+        embed.add_field(name='Players', value=f"{data['players']['online']}/{data['players']['max']}")
+        embed.add_field(name='Ping', value=f"{data['ping']}ms")
 
         if 'modinfo' in data:
             if data['modinfo']['type'] == 'FML':
@@ -329,7 +327,10 @@ class MinecraftCommands(commands.Cog):
         elif 'forgeData' in data:
             embed.add_field(name='Forge Server', value=f"{len(data['forgeData']['mods'])} mods enabled.")
 
-        await inter.send(embed=embed)
+        if favicon:
+            await inter.response.send_message(embed=embed, file=favicon)
+        else:
+            await inter.response.send_message(embed=embed)
 
-def setup(bot: Bot):
-    bot.add_cog(MinecraftCommands(bot))
+async def setup(bot: Bot):
+    await bot.add_cog(MinecraftCommands(bot))
