@@ -30,41 +30,56 @@ class AdminCommands(commands.Cog):
     async def sync(self, inter: discord.Interaction):
         """Syncs all slash commands"""
         await self.bot.tree.sync()
+        await inter.response.send_message('Synced commands.')
+
+    class EvalModal(discord.ui.Modal, title='Eval'):
+        def __init__(self, bot: Bot) -> None:
+            self.bot = bot
+            super().__init__()
+
+        code = discord.ui.TextInput(
+            label='Python Code',
+            custom_id='code',
+            style=discord.TextStyle.paragraph,
+            required=True
+        )
+
+        async def on_submit(self, inter: discord.Interaction) -> None:
+            code = self.code.value
+            """Eval"""
+            env = {
+                'bot': self.bot,
+                'inter': inter,
+                'channel': inter.channel,
+                'user': inter.user,
+                'guild': inter.guild
+            }
+            env.update(globals())
+
+            if code.startswith('```') and code.endswith('```'):
+                code = '\n'.join(code.split('\n')[1:-1])
+            else:
+                code = code.strip('` \n')
+
+            stdout = StringIO()
+
+            to_compile = f'async def func():\n{textwrap.indent(code, "  ")}'
+            exec(to_compile, env)
+
+            func = env['func']
+            with redirect_stdout(stdout):
+                ret = await func()
+                value = stdout.getvalue()
+                if ret is None:
+                    if value:
+                        await inter.response.send_message(f'```py\n{value}\n```')
+                else:
+                    await inter.response.send_message(f'Return: `{ret}`\n```py\n{value}\n```')
 
     @commands.is_owner()
     @admin.command()
-    async def eval(self, inter: discord.Interaction, code: str):
-        """Eval"""
-        assert inter.message
-        env = {
-            'bot': self.bot,
-            'inter': inter,
-            'channel': inter.channel,
-            'author': inter.message.author,
-            'guild': inter.guild,
-            'message': inter.message
-        }
-        env.update(globals())
-
-        if code.startswith('```') and code.endswith('```'):
-            code = '\n'.join(code.split('\n')[1:-1])
-        else:
-            code = code.strip('` \n')
-
-        stdout = StringIO()
-
-        to_compile = f'async def func():\n{textwrap.indent(code, "  ")}'
-        exec(to_compile, env)
-
-        func = env['func']
-        with redirect_stdout(stdout):
-            ret = await func()
-            value = stdout.getvalue()
-            if ret is None:
-                if value:
-                    await inter.response.send_message(f'```py\n{value}\n```')
-            else:
-                await inter.response.send_message(f'Return: `{ret}`\n\n```py\n{value}\n```')
+    async def eval(self, inter: discord.Interaction):
+        await inter.response.send_modal(self.EvalModal(self.bot))
 
     @module.command()
     async def load(self, inter: discord.Interaction, module: str):
