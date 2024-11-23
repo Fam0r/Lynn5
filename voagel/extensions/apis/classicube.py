@@ -57,7 +57,7 @@ class ClassicubeCommand(commands.GroupCog, name='classicube'):
         if data['forum_title']:
             embed.add_field(name='Legacy forum Title', value=data['forum_title'])
 
-        await inter.response.send_message(embed=embed)
+        await inter.followup.send(embed=embed)
 
 async def setup(bot: Bot):
     await bot.add_cog(ClassicubeCommand(bot))

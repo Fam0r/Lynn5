@@ -61,7 +61,7 @@ class OCRCommand(commands.Cog):
             filename = link.split('/')[-1].split('?')[0]
             file = discord.File(fp=BytesIO(img), filename=filename)
             embed.set_thumbnail(url=f'attachment://{filename}')
-            await inter.response.send_message(embed=embed, file=file)
+            await inter.followup.send(embed=embed, file=file)
 
     @app_commands.command(name='ocr')
     async def ocr(self,
@@ -103,7 +103,7 @@ class OCRCommand(commands.Cog):
             filename = link.split('/')[-1].split('?')[0]
             file = discord.File(fp=BytesIO(img), filename=filename)
             embed.set_thumbnail(url=f'attachment://{filename}')
-            await inter.response.send_message(embed=embed, file=file)
+            await inter.followup.send(embed=embed, file=file)
 
 async def setup(bot: Bot):
     await bot.add_cog(OCRCommand(bot))

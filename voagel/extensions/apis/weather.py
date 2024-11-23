@@ -84,7 +84,7 @@ class WeatherCommand(commands.Cog):
         embed.set_footer(text='Powered by WeatherAPI.com and OpenStreetMap') # TODO: Missing icon
         embed.timestamp = datetime.datetime.fromtimestamp(data['current']['last_updated_epoch'], tz=datetime.timezone.utc)
 
-        await inter.response.send_message(embed=embed)
+        await inter.followup.send(embed=embed)
 
 async def setup(bot: Bot):
     await bot.add_cog(WeatherCommand(bot))

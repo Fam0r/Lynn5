@@ -80,7 +80,12 @@ class Errors(commands.Cog):
             errmsg = f'{type(original).__name__}: {original}'
 
         embed = discord.Embed(color=ERROR_COLOR, title=errtype, description=errmsg)
-        await inter.response.send_message(embed=embed, ephemeral=True)
+
+        if not inter.response.is_done():
+            await inter.response.send_message(embed=embed, ephemeral=True)
+        else:
+            await inter.delete_original_response()
+            await inter.followup.send(embed=embed, ephemeral=True)
 
 async def setup(bot: Bot):
     await bot.add_cog(Errors(bot))

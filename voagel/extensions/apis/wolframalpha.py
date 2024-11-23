@@ -48,7 +48,7 @@ class WolframAlphaCommand(commands.Cog):
         file=discord.File(BytesIO(data), 'wolfram.png')
         embed.set_image(url='attachment://wolfram.png')
         embed.set_footer(text='Wolfram Alpha', icon_url=self.bot.get_asset('wolfram.png'))
-        await inter.response.send_message(embed=embed, file=file)
+        await inter.followup.send(embed=embed, file=file)
 
 
 async def setup(bot: Bot):

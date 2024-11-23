@@ -208,7 +208,7 @@ class MinecraftCommands(commands.GroupCog, name='minecraft'):
             embed.set_image(url=f'http://s.optifine.net/capes/{user}.png')
             embeds.append(embed)
 
-        await inter.response.send_message(embeds=embeds)
+        await inter.followup.send(embeds=embeds)
 
     def query_server(self, ip: str, port: str) -> dict[str, Any]:
         valid = False
@@ -328,9 +328,9 @@ class MinecraftCommands(commands.GroupCog, name='minecraft'):
             embed.add_field(name='Forge Server', value=f"{len(data['forgeData']['mods'])} mods enabled.")
 
         if favicon:
-            await inter.response.send_message(embed=embed, file=favicon)
+            await inter.followup.send(embed=embed, file=favicon)
         else:
-            await inter.response.send_message(embed=embed)
+            await inter.followup.send(embed=embed)
 
 async def setup(bot: Bot):
     await bot.add_cog(MinecraftCommands(bot))

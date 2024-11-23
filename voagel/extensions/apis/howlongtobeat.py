@@ -21,6 +21,7 @@ class HowlongtobeatCommand(commands.Cog):
         ----------
         game: Game's name
         """
+        await inter.response.defer()
         results = await HowLongToBeat().async_search(game)
         if results is not None and len(results) > 0:
             result = max(results, key=lambda element: element.similarity)
@@ -33,7 +34,7 @@ class HowlongtobeatCommand(commands.Cog):
             if result.game_image_url:
                 embed.set_thumbnail(url=result.game_image_url)
 
-            await inter.response.send_message(embed=embed)
+            await inter.followup.send(embed=embed)
         else:
             raise Exception('Game not found.')
 

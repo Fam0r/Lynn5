@@ -81,7 +81,7 @@ class TranslateCommand(commands.Cog):
         if 'confidence' in data and data['confidence'] < 1.0:
             embed.description = f'(confidence: {round(data["confidence"]*100, 2)}%)'
 
-        await inter.response.send_message(embed=embed)
+        await inter.followup.send(embed=embed)
 
     @app_commands.rename(_from='from')
     @app_commands.command()
@@ -133,7 +133,7 @@ class TranslateCommand(commands.Cog):
         if 'confidence' in data and data['confidence'] < 1.0:
             embed.description = f'(confidence: {round(data["confidence"]*100, 2)}%)'
 
-        await inter.response.send_message(embed=embed)
+        await inter.followup.send(embed=embed)
 
     @translate.autocomplete('_from')
     @translate.autocomplete('to')

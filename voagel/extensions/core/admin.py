@@ -60,7 +60,6 @@ class AdminCommands(commands.Cog):
     @git.command()
     async def pull(self, inter: discord.Interaction):
         """Pull the git repo"""
-        await inter.response.defer()
         out1 = await check_output(['git', 'pull'], timeout=30)
         out2 = await check_output(['git', 'log', '@{1}..', '--format=%h %an | %B'], timeout=30)
         await inter.response.send_message(f'```{out1}\n\n{out2}```')

@@ -107,9 +107,9 @@ class StatuspageComamnd(commands.Cog):
             embeds.append(embed)
 
         if len(embeds) > 10:
-            await inter.response.send_message(f'Only showing 10 incidents. {len(embeds)} total', embeds=embeds[:10])
+            await inter.followup.send(f'Only showing 10 incidents. {len(embeds)} total', embeds=embeds[:10])
         else:
-            await inter.response.send_message(embeds=embeds[:10])
+            await inter.followup.send(embeds=embeds[:10])
 
 async def setup(bot: Bot):
     await bot.add_cog(StatuspageComamnd(bot))
