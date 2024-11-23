@@ -3,3 +3,4 @@ discord.py >= 2.4.0
 howlongtobeatpy >= 1.0.5
 feedparser >= 6.0.11
 mmh3 >= 4.1.0
+audioop-lts; python_version>='3.13' # Temporary fix for 3.13 deprecating audioop and discord.py requiring it even without voice support
