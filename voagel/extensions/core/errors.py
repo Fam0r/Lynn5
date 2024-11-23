@@ -29,11 +29,9 @@ class Errors(commands.Cog):
             return
 
         assert inter.command
-        logging.warning('Ignoring exception in /%s', inter.command.name)
-        self.bot.data['last_error'] = '\n'.join(traceback.format_exception(type(error), error, error.__traceback__))
 
         errtype = '[Unknown Error]'
-        errmsg = '[Unknown Error]'
+        errmsg = None
 
         if isinstance(error, app_commands.BotMissingPermissions):
             missing = [perm.replace('_', ' ').title() for perm in error.missing_permissions]
@@ -78,6 +76,9 @@ class Errors(commands.Cog):
 
             original = getattr(error, 'original', error)
             errmsg = f'{type(original).__name__}: {original}'
+
+            self.bot.data['last_error'] = '\n'.join(traceback.format_exception(type(error), error, error.__traceback__))
+            logging.warning('Ignoring exception in /%s', inter.command.name)
 
         embed = discord.Embed(color=ERROR_COLOR, title=errtype, description=errmsg)
 

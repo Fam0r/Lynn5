@@ -7,6 +7,9 @@ from contextlib import redirect_stdout
 import textwrap
 from io import StringIO
 
+async def is_admin(inter: discord.Interaction) -> bool:
+    assert isinstance(inter.client, commands.Bot)
+    return await inter.client.is_owner(inter.user)
 
 class AdminCommands(commands.Cog):
     """Admin commands"""
@@ -17,6 +20,10 @@ class AdminCommands(commands.Cog):
     admin = app_commands.Group(name='admin', description='Administration commands')
     module = app_commands.Group(name='module', description='Module commands', parent=admin)
     git = app_commands.Group(name='git', description='Git commands', parent=admin)
+
+    admin.interaction_check = is_admin
+    module.interaction_check = is_admin
+    git.interaction_check = is_admin
 
     @admin.command()
     async def debug(self, inter: discord.Interaction):
@@ -33,10 +40,6 @@ class AdminCommands(commands.Cog):
         await inter.response.send_message('Synced commands.')
 
     class EvalModal(discord.ui.Modal, title='Eval'):
-        def __init__(self, bot: Bot) -> None:
-            self.bot = bot
-            super().__init__()
-
         code = discord.ui.TextInput(
             label='Python Code',
             custom_id='code',
@@ -48,7 +51,7 @@ class AdminCommands(commands.Cog):
             code = self.code.value
             """Eval"""
             env = {
-                'bot': self.bot,
+                'bot': inter.client,
                 'inter': inter,
                 'channel': inter.channel,
                 'user': inter.user,
@@ -79,7 +82,7 @@ class AdminCommands(commands.Cog):
     @commands.is_owner()
     @admin.command()
     async def eval(self, inter: discord.Interaction):
-        await inter.response.send_modal(self.EvalModal(self.bot))
+        await inter.response.send_modal(self.EvalModal())
 
     @module.command()
     async def load(self, inter: discord.Interaction, module: str):
