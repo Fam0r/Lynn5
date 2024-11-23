@@ -5,6 +5,7 @@ import tomllib
 import aiohttp
 from pathlib import Path
 from discord.ext import commands
+from discord import app_commands
 
 ERROR_COLOR = 0xff4444
 EMBED_COLOR = 0x8f8f8f
@@ -46,7 +47,11 @@ class Bot(commands.Bot):
             self.config = tomllib.load(f)
 
 def main() -> None:
-    bot = Bot(intents=discord.Intents.all(), command_prefix='whythefuckdoihavetoprovideacommandprefixidonthaveanytextcommands...')
+    bot = Bot(
+        intents=discord.Intents.all(),
+        allowed_installs=app_commands.AppInstallationType(guild=True, user=True),
+        command_prefix='whythefuckdoihavetoprovideacommandprefixidonthaveanytextcommands...',
+    )
     bot.load_config()
 
     bot.status = discord.Status(bot.config['bot']['status'])

@@ -3,7 +3,9 @@ from discord.ext import commands
 from discord import app_commands
 from voagel.main import Bot
 from voagel.utils import check_output
-
+from contextlib import redirect_stdout
+import textwrap
+from io import StringIO
 
 
 class AdminCommands(commands.Cog):
@@ -23,6 +25,46 @@ class AdminCommands(commands.Cog):
             await inter.response.send_message('No errors logged.', ephemeral=True)
 
         await inter.response.send_message(f'```{self.bot.data["last_error"][-1990:]}```', ephemeral=True) # Tail 1990 chars
+
+    @admin.command()
+    async def sync(self, inter: discord.Interaction):
+        """Syncs all slash commands"""
+        await self.bot.tree.sync()
+
+    @commands.is_owner()
+    @admin.command()
+    async def eval(self, inter: discord.Interaction, code: str):
+        """Eval"""
+        assert inter.message
+        env = {
+            'bot': self.bot,
+            'inter': inter,
+            'channel': inter.channel,
+            'author': inter.message.author,
+            'guild': inter.guild,
+            'message': inter.message
+        }
+        env.update(globals())
+
+        if code.startswith('```') and code.endswith('```'):
+            code = '\n'.join(code.split('\n')[1:-1])
+        else:
+            code = code.strip('` \n')
+
+        stdout = StringIO()
+
+        to_compile = f'async def func():\n{textwrap.indent(code, "  ")}'
+        exec(to_compile, env)
+
+        func = env['func']
+        with redirect_stdout(stdout):
+            ret = await func()
+            value = stdout.getvalue()
+            if ret is None:
+                if value:
+                    await inter.response.send_message(f'```py\n{value}\n```')
+            else:
+                await inter.response.send_message(f'Return: `{ret}`\n\n```py\n{value}\n```')
 
     @module.command()
     async def load(self, inter: discord.Interaction, module: str):
