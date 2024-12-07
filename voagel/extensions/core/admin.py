@@ -72,7 +72,11 @@ class AdminCommands(commands.Cog):
 
             func = env['func']
             with redirect_stdout(stdout):
-                ret = await func()
+                try:
+                    ret = await func()
+                except Exception as e:
+                    assert isinstance(inter.command, app_commands.Command)
+                    raise app_commands.CommandInvokeError(inter.command, e) from e
                 value = stdout.getvalue()
 
             if isinstance(ret, discord.Message):
