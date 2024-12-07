@@ -1,7 +1,8 @@
+from logging import ERROR
 import discord
 from discord.ext import commands
 from discord import app_commands
-from voagel.main import Bot
+from voagel.main import Bot, ERROR_COLOR
 from voagel.utils import check_output
 from contextlib import redirect_stdout
 import textwrap
@@ -75,8 +76,9 @@ class AdminCommands(commands.Cog):
                 try:
                     ret = await func()
                 except Exception as e:
-                    assert isinstance(inter.command, app_commands.Command)
-                    raise app_commands.CommandInvokeError(inter.command, e) from e
+                    embed = discord.Embed(color=ERROR_COLOR, title=type(e).__name__, description=e)
+                    await inter.response.send_message(embed=embed)
+                    return
                 value = stdout.getvalue()
 
             if isinstance(ret, discord.Message):
