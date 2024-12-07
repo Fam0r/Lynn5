@@ -80,8 +80,8 @@ class AdminCommands(commands.Cog):
                     return
                 value = stdout.getvalue()
 
-            if isinstance(ret, discord.Message):
-                await inter.response.send_message(ret)
+            if inter.response.is_done():
+                return # Message sent from eval, don't make an another one
             else:
                 output = ''
                 if ret:
