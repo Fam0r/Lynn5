@@ -49,7 +49,6 @@ class AdminCommands(commands.Cog):
         )
 
         async def on_submit(self, inter: discord.Interaction) -> None:
-            await inter.response.defer()
             code = self.code.value
             """Eval"""
             env = {
