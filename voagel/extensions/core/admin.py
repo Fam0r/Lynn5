@@ -48,6 +48,7 @@ class AdminCommands(commands.Cog):
         )
 
         async def on_submit(self, inter: discord.Interaction) -> None:
+            await inter.response.defer()
             code = self.code.value
             """Eval"""
             env = {
@@ -73,11 +74,18 @@ class AdminCommands(commands.Cog):
             with redirect_stdout(stdout):
                 ret = await func()
                 value = stdout.getvalue()
-                if ret is None:
-                    if value:
-                        await inter.response.send_message(f'```py\n{value}\n```')
-                else:
-                    await inter.response.send_message(f'Return: `{ret}`\n```py\n{value}\n```')
+
+            if isinstance(ret, discord.Message):
+                await inter.response.send_message(ret)
+            else:
+                output = ''
+                if ret:
+                    output += f'Return: ```\n{ret}\n```\n'
+                if value:
+                    output += f'```\n{value}\n```\n'
+                if not output:
+                    output = '[No response]'
+                await inter.response.send_message(output)
 
     @commands.is_owner()
     @admin.command()
