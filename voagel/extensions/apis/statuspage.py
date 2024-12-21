@@ -49,7 +49,7 @@ class StatuspageComamnd(commands.Cog):
         page = statusPages[service]
 
         col = EMBED_COLOR
-        req = await self.bot.session.get(page[0])
+        req = await self.bot.session.get(page[0] + '/index.json')
         j = await req.json()
         if j['status']['indicator'] == 'minor':
             col = 0xffa500
