@@ -4,3 +4,4 @@ services:
     volumes:
       - .:/app
     restart: unless-stopped
+    user: 1000:1000
