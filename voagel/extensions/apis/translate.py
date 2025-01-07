@@ -75,7 +75,7 @@ class TranslateCommand(commands.Cog):
 
         embed = discord.Embed(color=EMBED_COLOR)
         embed.add_field(name=f'From `{inlang}`', value=f'```\n{query}\n```', inline=False)
-        embed.add_field(name='To `English`', value=f'```\n{data["sentences"][0]["trans"]}\n```', inline=False)
+        embed.add_field(name='To `English`', value=f'```\n{" ".join([x["trans"] for x in data["sentences"]])}\n```', inline=False)
         embed.set_footer(text='Google Translate', icon_url=self.bot.get_asset('google_translate.png'))
 
         if 'confidence' in data and data['confidence'] < 1.0:
@@ -127,7 +127,7 @@ class TranslateCommand(commands.Cog):
 
         embed = discord.Embed(color=EMBED_COLOR)
         embed.add_field(name=f'From `{fromlang}`', value=f'```\n{query}\n```', inline=False)
-        embed.add_field(name=f'To `{tolang}`', value=f'```\n{data["sentences"][0]["trans"]}\n```', inline=False)
+        embed.add_field(name=f'To `{tolang}`', value=f'```\n{" ".join([x["trans"] for x in data["sentences"]])}\n```', inline=False)
         embed.set_footer(text='Google Translate', icon_url=self.bot.get_asset('google_translate.png'))
 
         if 'confidence' in data and data['confidence'] < 1.0:
