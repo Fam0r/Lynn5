@@ -20,7 +20,7 @@ class WhisperCommand(commands.Cog):
 
     async def do_transcribe(self, audio: bytes, content_type: str) -> str:
         data = aiohttp.FormData()
-        data.add_field('file',
+        data.add_field('audio_file',
                        audio,
                        content_type=content_type)
         req = await self.bot.session.post(f'{self.bot.config["apis"]["whisper"]}/asr?encode=true&task=transcribe&vad_filter=true&output=txt', data=data)
