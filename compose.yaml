@@ -5,3 +5,9 @@ services:
       - .:/app
     restart: unless-stopped
     user: 1000:1000
+    networks:
+      - voagel
+
+networks:
+  voagel:
+    external: true

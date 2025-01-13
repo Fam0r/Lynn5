@@ -5,6 +5,9 @@ weatherapi = ""
 gcp_ocr = ""
 gcp_translate = ""
 
+[apis]
+whisper = 'http://whisper-asr-webservice:9000'
+
 [bot]
 status = "online" # online/idle/dnd/offline
 activity_type = "playing" # playing/listening/watching/competing
