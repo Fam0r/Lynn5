@@ -1,5 +1,6 @@
 import re
 import base64
+import aiohttp
 from io import BytesIO
 
 import discord
@@ -17,10 +18,13 @@ class WhisperCommand(commands.Cog):
             callback=self.auto_transcribe
         ))
 
-    async def do_transcribe(self, audio: bytes) -> str:
-        data = {'file': audio}
+    async def do_transcribe(self, audio: bytes, content_type: str) -> str:
+        data = aiohttp.FormData()
+        data.add_field('file',
+                       audio,
+                       content_type=content_type)
         req = await self.bot.session.post(f'{self.bot.config["apis"]["whisper"]}/asr?encode=true&task=transcribe&vad_filter=true&output=txt', data=data)
-    
+
         if req.status != 200:
             raise Exception(f'Failed to transcribe file: {req.status}')
 
@@ -41,7 +45,7 @@ class WhisperCommand(commands.Cog):
         await inter.response.defer()
         req = await self.bot.session.get(link)
         audio = await req.read()
-        res = await self.do_transcribe(audio)
+        res = await self.do_transcribe(audio, req.content_type)
 
         embed = discord.Embed(color=EMBED_COLOR)
         embed.set_footer(text='Whisper', icon_url=self.bot.get_asset('oai.png'))
@@ -74,7 +78,7 @@ class WhisperCommand(commands.Cog):
         await inter.response.defer()
         req = await self.bot.session.get(link)
         audio = await req.read()
-        res = await self.do_transcribe(audio)
+        res = await self.do_transcribe(audio, req.content_type)
 
         embed = discord.Embed(color=EMBED_COLOR)
         embed.set_footer(text='Whisper', icon_url=self.bot.get_asset('oai.png'))
