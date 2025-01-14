@@ -83,7 +83,8 @@ class WhisperCommand(commands.Cog):
     async def transcribe(self,
         inter: discord.Interaction,
         attachment: discord.Attachment | None = None,
-        link: str | None = None
+        link: str | None = None,
+        translate: bool = False
     ):
         """
         Transcribe
@@ -92,6 +93,7 @@ class WhisperCommand(commands.Cog):
         ----------
         link: Link to audio
         attachment: Audio
+        translate: Should the audio be translated to English?
         """
 
         if attachment:
@@ -105,7 +107,7 @@ class WhisperCommand(commands.Cog):
         await inter.response.defer()
         req = await self.bot.session.get(link)
         audio = await req.read()
-        res = await self.do_transcribe(audio, req.content_type)
+        res = await self.do_transcribe(audio, req.content_type, task='translate' if translate else 'transcribe')
 
         embed = discord.Embed(color=EMBED_COLOR)
         embed.set_footer(text='Whisper', icon_url=self.bot.get_asset('oai.png'))
