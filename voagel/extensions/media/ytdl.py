@@ -2,6 +2,7 @@ import os
 import tempfile
 import functools
 import asyncio
+import re
 
 import discord
 from discord.ext import commands
@@ -73,8 +74,12 @@ class YtdlCommand(commands.Cog):
                     raise yt_dl.DownloadError('Something went wrong with the download.')
 
                 fp = tmpdir + '/' + info['id'] + '.' + info['ext']
+
+                if re.match(r'(^|https?:\/\/)(vm\.|www\.)?tiktok.com', link):
+                    await re_encode(fp)
+
                 size = os.path.getsize(fp)
-                if size > 26214400: # 25 MiB
+                if size > 8388608: # 8 MiB
                     raise yt_dl.DownloadError(f'File is too large! ({bytes2human(size)})')
 
                 file = discord.File(fp, filename=info['id'] + '.' + info['ext'], description='Source: ' + link)
