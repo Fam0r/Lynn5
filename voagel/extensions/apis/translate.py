@@ -120,7 +120,7 @@ class TranslateCommand(commands.Cog):
         data = (await self.do_translate(fromcode, tocode, query))['translations'][0]
 
         if 'detectedSourceLanguage' in data:
-            fromcode = fromlang = data['src']
+            fromcode = fromlang = data['detectedSourceLanguage']
             for lang, code in (await self.get_languages()).items():
                 if fromcode == code:
                     fromlang = lang
