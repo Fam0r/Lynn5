@@ -35,21 +35,20 @@ class TranslateCommand(commands.Cog):
     async def do_translate(self, fromlang: str | None, tolang: str, query: str):
         params = {
             'q': [query],
-            'tl': tolang,
-            'sl': fromlang if fromlang else 'auto',
-            'dt': 't',
-            'client': 'gtx',
-            'dj': 1,
-            'source': 'input'
+            'target': tolang,
+            'key': self.bot.get_api_key('gcp_translate')
         }
 
-        req = await self.bot.session.post(f'https://translate.googleapis.com/translate_a/single', params=params)
+        if fromlang:
+            params['source'] = fromlang
+
+        req = await self.bot.session.post(f'https://translation.googleapis.com/language/translate/v2', params=params)
         data = await req.json()
 
         if 'error' in data:
             raise Exception('Google Translate returned an error: ' + str(data['error']))
 
-        return data
+        return data['data']
 
     async def do_ocr_translate(self, fromlang: str | None, tolang: str, img: bytes):
         ocr_cog = self.bot.get_cog('OcrCommand')
@@ -65,17 +64,18 @@ class TranslateCommand(commands.Cog):
         query = message.content
         if not query:
             raise Exception('No text found in message.')
-        data = await self.do_translate(None, 'en', query)
+        data = (await self.do_translate(None, 'en', query))['translations'][0]
 
-
-        inlang = data['src']
-        for lang, code in (await self.get_languages()).items():
-            if code == data['src']:
-                inlang = lang
+        fromlang = 'Unknown'
+        if 'detectedSourceLanguage' in data:
+            fromcode = fromlang = data['detectedSourceLanguage']
+            for lang, code in (await self.get_languages()).items():
+                if fromcode == code:
+                    fromlang = lang
 
         embed = discord.Embed(color=EMBED_COLOR)
-        embed.add_field(name=f'From `{inlang}`', value=f'```\n{query}\n```', inline=False)
-        embed.add_field(name='To `English`', value=f'```\n{" ".join([x["trans"].strip() for x in data["sentences"]])}\n```', inline=False)
+        embed.add_field(name=f'From `{fromlang}`', value=f'```\n{query}\n```', inline=False)
+        embed.add_field(name='To `English`', value=f'```\n{data['translatedText']}\n```', inline=False)
         embed.set_footer(text='Google Translate', icon_url=self.bot.get_asset('google_translate.png'))
 
         if 'confidence' in data and data['confidence'] < 1.0:
@@ -117,9 +117,9 @@ class TranslateCommand(commands.Cog):
         if not tocode:
             raise commands.BadArgument(f'No language found by `{to}`')
 
-        data = await self.do_translate(fromcode, tocode, query)
+        data = (await self.do_translate(fromcode, tocode, query))['translations'][0]
 
-        if not fromcode and 'src' in data:
+        if 'detectedSourceLanguage' in data:
             fromcode = fromlang = data['src']
             for lang, code in (await self.get_languages()).items():
                 if fromcode == code:
@@ -127,7 +127,7 @@ class TranslateCommand(commands.Cog):
 
         embed = discord.Embed(color=EMBED_COLOR)
         embed.add_field(name=f'From `{fromlang}`', value=f'```\n{query}\n```', inline=False)
-        embed.add_field(name=f'To `{tolang}`', value=f'```\n{" ".join([x["trans"].strip() for x in data["sentences"]])}\n```', inline=False)
+        embed.add_field(name=f'To `{tolang}`', value=f'```\n{data['translatedText']}\n```', inline=False)
         embed.set_footer(text='Google Translate', icon_url=self.bot.get_asset('google_translate.png'))
 
         if 'confidence' in data and data['confidence'] < 1.0:
